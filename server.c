@@ -40,17 +40,28 @@ int acceptClient(int server_fd) {
 
 int main(int argc, char const *argv[]) {
     int server_fd, new_socket, max_sd;
+    int CE_count=0,EE_count=0,ME_count=0,room_port;
     char buffer[1024] = {0};
-    fd_set master_set, working_set;
-       
-    server_fd = setupServer(8080);
+    char tmp[1024];
+    fd_set master_set, working_set, room_set, CE_set, EE_set, ME_set;
 
+    if(argc==1){
+        printf("Error: Port Not Specified\n");
+        return 0;
+    }
+
+    if(argc>2){
+        printf("Error: Too Many Arguments\n");
+        return 0;
+    }    
+
+    server_fd = setupServer(atoi(argv[1]));
+    room_port=atoi(argv[1])+1;
     FD_ZERO(&master_set);
     max_sd = server_fd;
     FD_SET(server_fd, &master_set);
 
     write(1, "Server is running\n", 18);
-
     while (1) {
         working_set = master_set;
         select(max_sd + 1, &working_set, NULL, NULL, NULL);
@@ -76,11 +87,40 @@ int main(int argc, char const *argv[]) {
                         FD_CLR(i, &master_set);
                         continue;
                     }
+                    if (atoi(buffer)==1){
+                        printf("client %d requested CE room\n", i);
+                        FD_SET(i,&CE_set);
+                        CE_count++;
+                        //send(i,"Request Recived",28,0);
+                        if(CE_count==2){
+                            printf("CE Room Filled\n");
+                                for(int i = 0; i <= max_sd; i++){
+                                    if(FD_ISSET(i,&CE_set)){
+                                        sprintf(tmp, "%d", room_port);
+                                        send(i,tmp,strlen(tmp),0);
+                                        FD_CLR(i,&CE_set);
+                                    }
+                                }
+                            CE_count=0;
+                            room_port++;
+                        }
+                    }
+                    if (atoi(buffer)==2){
+                        printf("client %d requested EE room\n", i);
+                        FD_SET(i,&EE_set);
+                        EE_count++;
+                    }
+                    if (atoi(buffer)==3){
+                        printf("client %d requested ME room\n", i);
+                        FD_SET(i,&ME_set);
+                        ME_count++;
+                    }
 
                     printf("client %d: %s\n", i, buffer);
                     memset(buffer, 0, 1024);
                 }
             }
+            
         }
 
     }

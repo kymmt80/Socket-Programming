@@ -1,8 +1,8 @@
 
-all: s.out c.out
+all: server client
 
-s.out: server.c
-	gcc server.c -o s.out
+server: server.c
+	gcc server.c -o server
 
-c.out: client.c
-	gcc client.c -o c.out
+client: client.c
+	gcc client.c -o client
