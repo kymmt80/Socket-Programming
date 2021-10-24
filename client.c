@@ -56,6 +56,9 @@ int connectRoom(int port)
 
 int main(int argc, char const *argv[])
 {
+    int fd;
+    struct sockaddr_in room_address;
+    int broadcast = 1, opt = 1;
     int server_fd, room_fd=-1, max_sd, write_to;
     char buff[1024] = {0};
     char buffer[1024] = {0};
@@ -83,39 +86,31 @@ int main(int argc, char const *argv[])
     while (1)
     {
         read_set = master_set;
-        write_set = master_set;
         select(max_sd + 1, &read_set, NULL, NULL, NULL);
-        //for (int i = 0; i <= max_sd; i++)
-        //{
-        //if (FD_ISSET(i, &write_set)&&write_to==i)
-        //{
-        //    printf("message to:%d\n",i);
-        //     read(0, buff, 1024);
-        //if(i==server_fd){
-        //        send(i, buff, strlen(buff), 0);
-        //}
-        //        write_to=4;
-        //}
-        //read_set = master_set;
-        //write_set = master_set;
-        //select(max_sd + 1, &read_set, &write_set, NULL, NULL);
         if (FD_ISSET(server_fd, &read_set))
         {
             printf("message from:%d\n", server_fd);
             memset(buffer, 0, 1024);
             recv(server_fd, buffer, 1024, 0);
-            room_fd = connectRoom(atoi(buffer));
+            fd = socket(AF_INET, SOCK_DGRAM, 0);
+            setsockopt(fd, SOL_SOCKET, SO_BROADCAST, &broadcast, sizeof(broadcast));
+            setsockopt(fd, SOL_SOCKET, SO_REUSEPORT, &opt, sizeof(opt));
+
+            room_address.sin_family = AF_INET;
+            room_address.sin_port = htons(atoi(buffer));
+            room_address.sin_addr.s_addr = inet_addr("255.255.255.255");
+            bc_address=room_address;
+            if (bind(fd, (struct sockaddr *)&room_address, sizeof(room_address)) < 0)
+            {
+                printf("Error in connecting to room\n");
+            }
+            printf("connected to room\n");
+            room_fd = fd;
             printf("%d\n", atoi(buffer));
             FD_SET(room_fd, &master_set);
             max_sd = room_fd;
             write_to = room_fd;
         }
-        //if(FD_ISSET(room_fd, &read_set)){
-        //    //write(0, buffer, strlen(buffer));
-        //    //write(0,buffer,strlen(buffer));
-        //    recv(server_fd, buffer, 1024, 0);
-        //    printf("%s\n", buffer);
-        //}
         if(FD_ISSET(STDIN_FILENO, &read_set)){
             //write(0, buffer, strlen(buffer));
             //write(0,buffer,strlen(buffer));
@@ -129,6 +124,13 @@ int main(int argc, char const *argv[])
                 //send(write_to, buffer, strlen(buffer), 0);
                 sendto(write_to, buffer, strlen(buffer), 0,(struct sockaddr *)&bc_address, sizeof(bc_address));
             }
+        }
+        if(FD_ISSET(room_fd, &read_set)){
+            //write(0, buffer, strlen(buffer));
+            //write(0,buffer,strlen(buffer));
+            printf("message from:%d\n", room_fd);
+            recv(room_fd, buffer, 1024, 0);
+            printf("%s\n",buffer);
         }
         memset(buffer, 0, 1024);
         // }
