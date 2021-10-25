@@ -10,6 +10,7 @@
 
 #define ASKING 0
 #define ANSWERING 1
+#define MARK_BEST 2
 
 int connectServer(int port)
 {
@@ -128,7 +129,7 @@ int main(int argc, char const *argv[])
                 send(write_to, buffer, strlen(buffer), 0);
             }else{
                 //printf("message to 4\n");
-                if((cur_ask_turn==id&&mode==ASKING)||(cur_ans_turn==id&&mode==ANSWERING)){
+                if((cur_ask_turn==id&&mode!=ANSWERING)||(cur_ans_turn==id&&mode==ANSWERING)){
                     sprintf(buff,"User %d: %s",id,buffer);
                     sendto(write_to, buff, strlen(buff), 0,(struct sockaddr *)&bc_address, sizeof(bc_address));
                 }
@@ -153,12 +154,19 @@ int main(int argc, char const *argv[])
             else if(mode==ANSWERING){
                 cur_ans_turn=(cur_ans_turn)%3+1;
                 if(cur_ans_turn==cur_ask_turn){
-                    if(cur_ask_turn==id){
-                        send(server_fd, QandA, strlen(QandA), 0);
-                    }
-                    cur_ask_turn++;
-                    mode=ASKING;
+                    //if(cur_ask_turn==id){
+                    //    send(server_fd, QandA, strlen(QandA), 0);
+                    //}
+                    //cur_ask_turn++;
+                    //mode=ASKING;
+                    mode=MARK_BEST;
                 }
+            }else if(mode==MARK_BEST){
+                if(cur_ask_turn==id){
+                     send(server_fd, QandA, strlen(QandA), 0);
+                }
+                cur_ask_turn++;
+                mode=ASKING;
             }
             //printf("User %d turn in %d mode\n",cur_ans_turn,mode);
         }
