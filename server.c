@@ -40,6 +40,7 @@ int acceptClient(int server_fd) {
 
 int main(int argc, char const *argv[]) {
     int server_fd, new_socket, max_sd;
+    int id=1;
     int CE_count=0,EE_count=0,ME_count=0,room_port;
     char buffer[1024] = {0};
     char tmp[1024];
@@ -92,15 +93,17 @@ int main(int argc, char const *argv[]) {
                         FD_SET(i,&CE_set);
                         CE_count++;
                         //send(i,"Request Recived",28,0);
-                        if(CE_count==2){
+                        if(CE_count==3){
                             printf("CE Room Filled\n");
                                 for(int i = 0; i <= max_sd; i++){
                                     if(FD_ISSET(i,&CE_set)){
-                                        sprintf(tmp, "%d", room_port);
+                                        sprintf(tmp, "%d%d",id, room_port);
                                         send(i,tmp,strlen(tmp),0);
+                                        id++;
                                         FD_CLR(i,&CE_set);
                                     }
                                 }
+                            id=1;
                             CE_count=0;
                             room_port++;
                         }

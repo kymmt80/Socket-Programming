@@ -8,6 +8,9 @@
 #include <arpa/inet.h>
 #include <sys/time.h>
 
+#define ASKING 0
+#define ANSWERING 1
+
 int connectServer(int port)
 {
     int fd;
@@ -60,8 +63,11 @@ int main(int argc, char const *argv[])
     struct sockaddr_in room_address;
     int broadcast = 1, opt = 1;
     int server_fd, room_fd=-1, max_sd, write_to;
-    char buff[1024] = {0};
+    char buff[1049] = {0};
     char buffer[1024] = {0};
+    char QandA[1024]={0};
+    char* port;
+    int id,cur_ask_turn=1,cur_ans_turn=1,mode=ASKING;
     fd_set master_set, read_set, write_set;
 
     if (argc == 1)
@@ -92,12 +98,14 @@ int main(int argc, char const *argv[])
             printf("message from:%d\n", server_fd);
             memset(buffer, 0, 1024);
             recv(server_fd, buffer, 1024, 0);
+            id=buffer[0]-'0';
+            port=&buffer[1];
             fd = socket(AF_INET, SOCK_DGRAM, 0);
             setsockopt(fd, SOL_SOCKET, SO_BROADCAST, &broadcast, sizeof(broadcast));
             setsockopt(fd, SOL_SOCKET, SO_REUSEPORT, &opt, sizeof(opt));
 
             room_address.sin_family = AF_INET;
-            room_address.sin_port = htons(atoi(buffer));
+            room_address.sin_port = htons(atoi(port));
             room_address.sin_addr.s_addr = inet_addr("255.255.255.255");
             bc_address=room_address;
             if (bind(fd, (struct sockaddr *)&room_address, sizeof(room_address)) < 0)
@@ -114,23 +122,45 @@ int main(int argc, char const *argv[])
         if(FD_ISSET(STDIN_FILENO, &read_set)){
             //write(0, buffer, strlen(buffer));
             //write(0,buffer,strlen(buffer));
-            printf("message from:%d\n", STDIN_FILENO);
+            //printf("message from:%d\n", STDIN_FILENO);
             read(0, buffer, 1024);
             if(write_to==server_fd){
                 send(write_to, buffer, strlen(buffer), 0);
             }else{
-                printf("message to 4\n");
-                printf("%s\n", buffer);
-                //send(write_to, buffer, strlen(buffer), 0);
-                sendto(write_to, buffer, strlen(buffer), 0,(struct sockaddr *)&bc_address, sizeof(bc_address));
+                //printf("message to 4\n");
+                if((cur_ask_turn==id&&mode==ASKING)||(cur_ans_turn==id&&mode==ANSWERING)){
+                    sprintf(buff,"User %d: %s",id,buffer);
+                    sendto(write_to, buff, strlen(buff), 0,(struct sockaddr *)&bc_address, sizeof(bc_address));
+                }
+                else{
+                    printf("Not Your Turn\n");
+                }
             }
         }
         if(FD_ISSET(room_fd, &read_set)){
             //write(0, buffer, strlen(buffer));
             //write(0,buffer,strlen(buffer));
-            printf("message from:%d\n", room_fd);
+            //printf("message from:%d\n", room_fd);
             recv(room_fd, buffer, 1024, 0);
             printf("%s\n",buffer);
+            if(cur_ask_turn==id){
+                strcat(QandA,buffer);
+            }
+            if(mode==ASKING){
+                mode=ANSWERING;
+                cur_ans_turn=(cur_ask_turn)%3+1;
+            }
+            else if(mode==ANSWERING){
+                cur_ans_turn=(cur_ans_turn)%3+1;
+                if(cur_ans_turn==cur_ask_turn){
+                    if(cur_ask_turn==id){
+                        send(server_fd, QandA, strlen(QandA), 0);
+                    }
+                    cur_ask_turn++;
+                    mode=ASKING;
+                }
+            }
+            //printf("User %d turn in %d mode\n",cur_ans_turn,mode);
         }
         memset(buffer, 0, 1024);
         // }
