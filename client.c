@@ -7,10 +7,15 @@
 #include <string.h>
 #include <arpa/inet.h>
 #include <sys/time.h>
+#include <signal.h>
 
 #define ASKING 0
 #define ANSWERING 1
 #define MARK_BEST 2
+
+void alarm_handler(int sig){
+    printf("turn_passed\n");
+}
 
 int connectServer(int port)
 {
@@ -68,7 +73,9 @@ int main(int argc, char const *argv[])
     char buffer[1024] = {0};
     char QandA[1024]={0};
     char* port;
-    int id,cur_ask_turn=1,cur_ans_turn=1,mode=ASKING;
+    int id,cur_ask_turn=1,cur_ans_turn=2,mode=ASKING,bytes;
+    signal(SIGALRM, alarm_handler);
+    siginterrupt(SIGALRM, 1);
     fd_set master_set, read_set, write_set;
 
     if (argc == 1)
@@ -93,7 +100,15 @@ int main(int argc, char const *argv[])
     while (1)
     {
         read_set = master_set;
-        select(max_sd + 1, &read_set, NULL, NULL, NULL);
+        if(cur_ans_turn==id&&mode==ANSWERING)
+            alarm(10);
+        bytes=select(max_sd + 1, &read_set, NULL, NULL, NULL);
+        alarm(0);
+        if(bytes<0){
+            sprintf(buff,"User %d did not answer\n",id);
+            sendto(room_fd, buff, strlen(buff), 0,(struct sockaddr *)&bc_address, sizeof(bc_address));
+            continue;
+        }
         if (FD_ISSET(server_fd, &read_set))
         {
             printf("message from:%d\n", server_fd);
