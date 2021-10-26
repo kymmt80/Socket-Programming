@@ -13,6 +13,8 @@
 #define ANSWERING 1
 #define MARK_BEST 2
 
+#define PORT_FROM_SERVER '$'
+
 void alarm_handler(int sig){
     write(STDOUT_FILENO,"turn_passed\n",13);
 }
@@ -29,7 +31,7 @@ int connectServer(int port)
     server_address.sin_addr.s_addr = inet_addr("127.0.0.1");
 
     if (connect(fd, (struct sockaddr *)&server_address, sizeof(server_address)) < 0)
-    { // checking for errors
+    {
         write(STDOUT_FILENO,"Error in connecting to server\n",31);
         return -1;
     }
@@ -48,11 +50,11 @@ int main(int argc, char const *argv[])
     char QandA[1024]={0};
     char tmp[1049]={0};
     char* port;
-    int id,cur_ask_turn=1,cur_ans_turn=2,mode=ASKING,bytes;
+    int id,cur_ask_turn=1,cur_ans_turn=2,mode=ASKING,bytes,room_type;
     signal(SIGALRM, alarm_handler);
     siginterrupt(SIGALRM, 1);
     fd_set master_set, read_set, write_set;
-
+    QandA[0]='#';
     if (argc == 1)
     {
         write(STDOUT_FILENO,"Error: Port Not Specified\n",27);
@@ -90,7 +92,7 @@ int main(int argc, char const *argv[])
         {
             memset(buffer, 0, 1024);
             recv(server_fd, buffer, 1024, 0);
-            if(buffer[0]=='$'){
+            if(buffer[0]==PORT_FROM_SERVER){
                 id=buffer[1]-'0';
                 port=&buffer[2];
                 fd = socket(AF_INET, SOCK_DGRAM, 0);
@@ -117,6 +119,10 @@ int main(int argc, char const *argv[])
         if(FD_ISSET(STDIN_FILENO, &read_set)){
             read(0, buffer, 1024);
             if(write_to==server_fd){
+                if(strlen(buffer)==2&&buffer[0]>='1'&&buffer[0]<='3'){
+                    QandA[1]=buffer[0];
+                }
+
                 send(write_to, buffer, strlen(buffer), 0);
             }else{
                 if((cur_ask_turn==id&&mode!=ANSWERING)||(cur_ans_turn==id&&mode==ANSWERING)){
@@ -145,7 +151,8 @@ int main(int argc, char const *argv[])
                 }
             }else if(mode==MARK_BEST){
                 if(cur_ask_turn==id){
-                     send(server_fd, QandA, strlen(QandA), 0);
+                    write(STDOUT_FILENO,"Sent Thread to Server\n",25);
+                    send(server_fd, QandA, strlen(QandA), 0);
                 }
                 cur_ask_turn++;
                 mode=ASKING;

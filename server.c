@@ -38,11 +38,12 @@ int acceptClient(int server_fd) {
 }
 
 int main(int argc, char const *argv[]) {
-    int server_fd, new_socket, max_sd;
+    int server_fd, new_socket, max_sd,fd;
     int id=1;
     int CE_count=0,EE_count=0,ME_count=0,room_port;
     char buffer[1024] = {0};
     char tmp[1024];
+    char* record;
     fd_set master_set, working_set, room_set, CE_set, EE_set, ME_set;
 
     if(argc==1){
@@ -86,7 +87,7 @@ int main(int argc, char const *argv[]) {
                     bytes_received = recv(i , buffer, 1024, 0);
                     
                     if (bytes_received == 0) { // EOF
-                        sprintf(tmp,"client fd = %d closed\n", i);
+                        sprintf(tmp,"Client %d Closed Connection\n", i);
                         write(STDOUT_FILENO,tmp,strlen(tmp));
                         close(i);
                         FD_CLR(i, &master_set);
@@ -178,6 +179,28 @@ int main(int argc, char const *argv[]) {
                             ME_count=0;
                             room_port++;
                         }
+                    }
+                    if(buffer[0]=='#'){
+                        sprintf(tmp,"Recived Thread from Client %d\n", i);
+                        write(STDOUT_FILENO,tmp,strlen(tmp));
+                        record=&buffer[2];
+                        if(buffer[1]=='1'){
+                            if((fd=open("./CE.txt",O_CREAT|O_APPEND|O_WRONLY,0666))<0){
+                                write(STDOUT_FILENO,"Error Opening CE.txt",21);
+                            }
+                        }else if(buffer[1]=='2'){
+                            if((fd=open("./EE.txt",O_CREAT|O_APPEND|O_WRONLY,0666))<0){
+                                write(STDOUT_FILENO,"Error Opening EE.txt",21);
+                            }
+                        }else if(buffer[1]=='3'){
+                            if((fd=open("./ME.txt",O_CREAT|O_APPEND|O_WRONLY,0666))<0){
+                                write(STDOUT_FILENO,"Error Opening ME.txt",21);
+                            }
+                        }
+                        write(fd,"-----------------\n",18);
+                        write(fd,record,strlen(record));
+                        close(fd);
+
                     }
 
                     memset(buffer, 0, 1024);
