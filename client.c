@@ -16,7 +16,7 @@
 #define PORT_FROM_SERVER '$'
 
 void alarm_handler(int sig){
-    write(STDOUT_FILENO,"turn_passed\n",13);
+    write(STDOUT_FILENO,"Time Limit Exeeded\n",20);
 }
 
 int connectServer(int port)
@@ -80,11 +80,11 @@ int main(int argc, char const *argv[])
     {
         read_set = master_set;
         if(cur_ans_turn==id&&mode==ANSWERING)
-            alarm(10);
+            alarm(60);
         bytes=select(max_sd + 1, &read_set, NULL, NULL, NULL);
         alarm(0);
         if(bytes<0){
-            sprintf(buff,"User %d did not answer\n",id);
+            sprintf(buff,"User %d Did not Answer\n",id);
             sendto(room_fd, buff, strlen(buff), 0,(struct sockaddr *)&room_address, sizeof(room_address));
             continue;
         }
@@ -110,6 +110,11 @@ int main(int argc, char const *argv[])
                     write(STDOUT_FILENO,"Error in Connecting to Room\n",29);
                 }
                 write(STDOUT_FILENO,"Connected to Room\n",19);
+                sprintf(tmp,"You Are User %d\n",id);
+                write(STDOUT_FILENO,tmp,strlen(tmp));
+                if(id==1){
+                    write(STDOUT_FILENO,"It's Your Turn to Ask\n",23);
+                }
                 room_fd = fd;
                 FD_SET(room_fd, &master_set);
                 max_sd = room_fd;
@@ -129,7 +134,15 @@ int main(int argc, char const *argv[])
                 send(write_to, buffer, strlen(buffer), 0);
             }else{
                 if((cur_ask_turn==id&&mode!=ANSWERING)||(cur_ans_turn==id&&mode==ANSWERING)){
-                    sprintf(tmp,"User %d: %s",id,buffer);
+                    if(!strcmp(buffer,"pass\n")){
+                        sprintf(tmp,"User %d Did not Answer\n",id);
+                    }
+                    else if(mode==ASKING)
+                        sprintf(tmp,"Question By User %d: %s",id,buffer);
+                    else if(mode==ANSWERING)
+                        sprintf(tmp,"Answer By User %d: %s",id,buffer);
+                    else if(mode==MARK_BEST)
+                        sprintf(tmp,"Best Answer is %s",buffer);
                     sendto(write_to, tmp, strlen(tmp), 0,(struct sockaddr *)&room_address, sizeof(room_address));
                 }
                 else{
@@ -146,18 +159,33 @@ int main(int argc, char const *argv[])
             if(mode==ASKING){
                 mode=ANSWERING;
                 cur_ans_turn=(cur_ask_turn)%3+1;
+                if(cur_ans_turn==id){
+                    write(STDOUT_FILENO,"It's Your Turn to Answer\n",26);
+                }
             }
             else if(mode==ANSWERING){
                 cur_ans_turn=(cur_ans_turn)%3+1;
                 if(cur_ans_turn==cur_ask_turn){
                     mode=MARK_BEST;
+                    if(cur_ask_turn==id){
+                        write(STDOUT_FILENO,"Mark the Best Answer\n",22);
+                }
+                }else{
+                    if(cur_ans_turn==id){
+                    write(STDOUT_FILENO,"It's Your Turn to Answer\n",26);
+                }
                 }
             }else if(mode==MARK_BEST){
                 if(cur_ask_turn==id){
+                    if(send(server_fd, QandA, strlen(QandA), 0)<0){
+                        write(STDOUT_FILENO,"Error in Sending Thread to Server\n",34);
+                    }
                     write(STDOUT_FILENO,"Sent Thread to Server\n",25);
-                    send(server_fd, QandA, strlen(QandA), 0);
                 }
                 cur_ask_turn++;
+                if(cur_ask_turn==id){
+                    write(STDOUT_FILENO,"It's Your Turn to Ask\n",23);
+                }
                 if(cur_ask_turn>3){
                     return 0;
                 }
