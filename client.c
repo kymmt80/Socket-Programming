@@ -91,7 +91,10 @@ int main(int argc, char const *argv[])
         if (FD_ISSET(server_fd, &read_set))
         {
             memset(buffer, 0, 1024);
-            recv(server_fd, buffer, 1024, 0);
+            if(recv(server_fd, buffer, 1024, 0)==0){
+                write(STDOUT_FILENO,"Lost Connection to Server\n",27);
+                return 0;
+            }
             if(buffer[0]==PORT_FROM_SERVER){
                 id=buffer[1]-'0';
                 port=&buffer[2];
@@ -155,6 +158,9 @@ int main(int argc, char const *argv[])
                     send(server_fd, QandA, strlen(QandA), 0);
                 }
                 cur_ask_turn++;
+                if(cur_ask_turn>3){
+                    return 0;
+                }
                 mode=ASKING;
             }
         }
