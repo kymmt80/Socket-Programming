@@ -31,6 +31,7 @@ int connectServer(int port)
     if (connect(fd, (struct sockaddr *)&server_address, sizeof(server_address)) < 0)
     { // checking for errors
         write(STDOUT_FILENO,"Error in connecting to server\n",31);
+        return -1;
     }
     write(STDOUT_FILENO,"Connected to Server\n",21);
     return fd;
@@ -65,6 +66,9 @@ int main(int argc, char const *argv[])
     }
 
     server_fd = connectServer(atoi(argv[1]));
+    if(server_fd<0){
+        return 0;
+    }
     FD_ZERO(&master_set);
     max_sd = server_fd;
     FD_SET(STDIN_FILENO, &master_set);
