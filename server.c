@@ -113,12 +113,12 @@ int main(int argc, char const *argv[]) {
                         }
                         sprintf(tmp,"CE room: %d/3\n", CE_count);
                         write(STDOUT_FILENO,tmp,strlen(tmp));
-                        //send(i,"Request Recived",28,0);
+                        send(i,"Request Recived",28,0);
                         if(CE_count==3){
                             write(STDOUT_FILENO,"CE Room Filled\n",16);
                                 for(int i = 0; i <= max_sd; i++){
                                     if(FD_ISSET(i,&CE_set)){
-                                        sprintf(tmp, "%d%d",id, room_port);
+                                        sprintf(tmp, "$%d%d",id, room_port);
                                         send(i,tmp,strlen(tmp),0);
                                         id++;
                                         FD_CLR(i,&CE_set);
@@ -138,12 +138,12 @@ int main(int argc, char const *argv[]) {
                         }
                         sprintf(tmp,"EE room: %d/3\n", EE_count);
                         write(STDOUT_FILENO,tmp,strlen(tmp));
-                        //send(i,"Request Recived",28,0);
+                        send(i,"Request Recived",28,0);
                         if(EE_count==3){
                             write(STDOUT_FILENO,"EE Room Filled\n",16);
                                 for(int i = 0; i <= max_sd; i++){
                                     if(FD_ISSET(i,&EE_set)){
-                                        sprintf(tmp, "%d%d",id, room_port);
+                                        sprintf(tmp, "$%d%d",id, room_port);
                                         send(i,tmp,strlen(tmp),0);
                                         id++;
                                         FD_CLR(i,&EE_set);
@@ -163,12 +163,12 @@ int main(int argc, char const *argv[]) {
                         }
                         sprintf(tmp,"ME room: %d/3\n", ME_count);
                         write(STDOUT_FILENO,tmp,strlen(tmp));
-                        //send(i,"Request Recived",28,0);
+                        send(i,"Request Recived",28,0);
                         if(ME_count==3){
                             write(STDOUT_FILENO,"ME Room Filled\n",16);
                                 for(int i = 0; i <= max_sd; i++){
                                     if(FD_ISSET(i,&ME_set)){
-                                        sprintf(tmp, "%d%d",id, room_port);
+                                        sprintf(tmp, "$%d%d",id, room_port);
                                         send(i,tmp,strlen(tmp),0);
                                         id++;
                                         FD_CLR(i,&ME_set);
