@@ -146,7 +146,7 @@ int main(int argc, char const *argv[])
                     sendto(write_to, tmp, strlen(tmp), 0,(struct sockaddr *)&room_address, sizeof(room_address));
                 }
                 else{
-                    write(STDOUT_FILENO,"Not Your Turn\n",15);
+                    write(STDOUT_FILENO,"It's Not Your Turn\n",20);
                 }
             }
         }
@@ -180,13 +180,14 @@ int main(int argc, char const *argv[])
                     if(send(server_fd, QandA, strlen(QandA), 0)<0){
                         write(STDOUT_FILENO,"Error in Sending Thread to Server\n",34);
                     }
-                    write(STDOUT_FILENO,"Sent Thread to Server\n",25);
+                    write(STDOUT_FILENO,"Sent Thread to Server\n",23);
                 }
                 cur_ask_turn++;
                 if(cur_ask_turn==id){
                     write(STDOUT_FILENO,"It's Your Turn to Ask\n",23);
                 }
                 if(cur_ask_turn>3){
+                    write(STDOUT_FILENO,"Room Closed\n",13);
                     return 0;
                 }
                 mode=ASKING;
